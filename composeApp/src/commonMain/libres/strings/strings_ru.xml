@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="app_name">Карты йоу слэй</string>
+    <string name="my_geoposition">Моя геопозиция</string>
+    <string name="point_map">Карта с точкой</string>
+
+</resources>

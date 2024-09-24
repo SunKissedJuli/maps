@@ -1,14 +1,8 @@
 package com.example.maps.platform
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.Log
-import android.view.MotionEvent
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,45 +14,44 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.maps.data.MapPoint
-import com.example.maps.images.MapsResourceImages
 import com.example.maps.utils.MapObjectHandler
 import com.yandex.mapkit.Animation
-import com.yandex.mapkit.GeoObject
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.layers.GeoObjectTapListener
-import com.yandex.mapkit.map.CameraListener
+import com.yandex.mapkit.location.Location
+import com.yandex.mapkit.location.LocationStatus
 import com.yandex.mapkit.map.CameraPosition
-import com.yandex.mapkit.map.CameraUpdateReason
-import com.yandex.mapkit.map.Map
-import com.yandex.mapkit.mapview.MapView
-import com.yandex.runtime.image.ImageProvider
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import com.yandex.mapkit.location.LocationListener
 
-@SuppressLint("ServiceCast")
 @Composable
-actual fun KoinComponent.YandexMapPoint(latitude: Double, longitude: Double, pointSize: Int, modifier: Modifier) {
+actual fun KoinComponent.YandexMapGeolocation(
+    pointSize: Int,
+    modifier: Modifier
+){
     val mapObjectHandler: MapObjectHandler by inject()
     val mapView = CustomMapView(LocalContext.current)
     var panelPosition by remember { mutableStateOf(Offset(0f, 0f)) }
-    var mapPoint: MapPoint by remember {
-        mutableStateOf(MapPoint.empty)
-    }
+    var userLocation by remember { mutableStateOf<Point?>(null) }
 
     LaunchedEffect(Unit) {
         MapKitFactory.getInstance().onStart()
+        requestUserLocation { location ->
+            userLocation = location
+            if (location != null) {
+                mapView.map.move(
+                    CameraPosition(location, 16.0f, 0.0f, 0.0f),
+                    Animation(Animation.Type.SMOOTH, 1f),
+                    null
+                )
+                panelPosition = Offset(location.longitude.toFloat(), location.latitude.toFloat())
+            }
+        }
     }
 
     mapView.onStart()
-
-    val cameraListener = CameraListener { p0, p1, p2, p3 ->
-        if(mapPoint != MapPoint.empty){
-            mapPoint = MapPoint.empty
-            val newPoint = mapPoint
-            mapObjectHandler.addPoint(newPoint)
-        }
-    }
 
     val geoObjectTapListener = GeoObjectTapListener { event ->
         val geoLatitude = event.geoObject.geometry.firstOrNull()?.point?.latitude
@@ -72,38 +65,45 @@ actual fun KoinComponent.YandexMapPoint(latitude: Double, longitude: Double, poi
                 Log.d("ss", "screenPoint x = ${screenPoint.x}  y = ${screenPoint.y}")
             }
             val point = MapPoint(latitude = geoLatitude, longitude = geoLongitude, name = name, IntOffset(panelPosition.x.toInt(), panelPosition.y.toInt()))
-            mapPoint = point
-            Log.d("ss", "point = " + point)
+            Log.d("ss", "panelPosition = $panelPosition")
+            Log.d("ss", "point = $point")
             mapObjectHandler.addPoint(point)
         }
         true
     }
 
-    mapView.map.addCameraListener(cameraListener)
     mapView.map.addTapListener(geoObjectTapListener)
-    AddPlacemark(mapView.map, LocalContext.current, latitude, longitude, pointSize)
-    mapView.map.move(CameraPosition(Point(latitude, longitude),
-        16.0f, 0.0f, 0.0f),
-        Animation(Animation.Type.SMOOTH, 0f), null)
+    AddPlacemark(mapView.map, LocalContext.current,
+        userLocation?.latitude ?: 55.75172681525427, userLocation?.longitude ?: 37.61802944543841)
 
     AndroidView(modifier = modifier.fillMaxWidth(), factory = { mapView })
 }
 
-@Composable
-fun AddPlacemark(map: Map, context: Context, latitude: Double, longitude: Double, size: Int = 20) {
-    val point = Point(latitude, longitude)
-    val bitmap = BitmapFactory.decodeResource(context.resources, MapsResourceImages.dog)
-    val resizedBitmap = Bitmap.createScaledBitmap(bitmap, size, size, false)
-    map.mapObjects.addPlacemark(point, ImageProvider.fromBitmap(resizedBitmap))
-}
+private fun requestUserLocation(onLocationReceived: (Point?) -> Unit) {
+    val mapKitInstance = MapKitFactory.getInstance()
+    val locationManager = mapKitInstance.createLocationManager()
 
-class CustomMapView(context: Context) : MapView(context) {
+    locationManager.requestSingleUpdate(object : LocationListener {
+        override fun onLocationUpdated(location: Location) {
 
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        when (ev.action) {
-            MotionEvent.ACTION_UP -> parent.requestDisallowInterceptTouchEvent(false)
-            MotionEvent.ACTION_DOWN -> parent.requestDisallowInterceptTouchEvent(true)
+            onLocationReceived(location.position)
         }
-        return super.dispatchTouchEvent(ev)
-    }
+
+        override fun onLocationStatusUpdated(locationStatus: LocationStatus) {
+            when (locationStatus) {
+                LocationStatus.NOT_AVAILABLE -> {
+                    Log.d("sdg", "Location NOT_AVAILABLE")
+                    onLocationReceived(null) // Notify that location is not available
+                }
+                LocationStatus.AVAILABLE -> {
+                    Log.d("sdg", "Location AVAILABLE")
+                }
+
+                LocationStatus.RESET -> {
+                    Log.d("sd", "Location RESET")
+                }
+            }
+        }
+
+    })
 }

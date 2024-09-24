@@ -4,5 +4,8 @@
     <string name="app_name">Карты йоу слэй</string>
     <string name="my_geoposition">Моя геопозиция</string>
     <string name="point_map">Карта с точкой</string>
+    <string name="taxi">Такси</string>
+    <string name="latitude">Широта</string>
+    <string name="longitude">Долгота</string>
 
 </resources>

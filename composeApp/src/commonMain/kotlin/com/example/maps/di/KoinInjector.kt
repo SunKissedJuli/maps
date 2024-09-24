@@ -9,7 +9,7 @@ object KoinInjector {
     val koinApp = startKoin{
         loadKoinModules(
             listOf(
-
+                managerModule
             )
         )
 

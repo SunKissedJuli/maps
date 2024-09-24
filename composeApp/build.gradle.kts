@@ -51,6 +51,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.koin.android)
 
         }
         commonMain.dependencies {
@@ -63,13 +64,14 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
+            implementation(libs.libres.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
 
-            implementation("ru.sulgik.mapkit:yandex-mapkit-kmp:0.1.0")
-            implementation("ru.sulgik.mapkit:yandex-mapkit-kmp-compose:0.1.0")
-            implementation("ru.sulgik.mapkit:yandex-mapkit-kmp-moko:0.1.0")
-            implementation("ru.sulgik.mapkit:yandex-mapkit-kmp-moko-compose:0.1.0")
-          //  implementation(libs.yandex.maps)
+        //  //  implementation("ru.sulgik.mapkit:yandex-mapkit-kmp:0.1.0")
+          //  implementation("ru.sulgik.mapkit:yandex-mapkit-kmp-compose:0.1.0")
+          //  implementation("ru.sulgik.mapkit:yandex-mapkit-kmp-moko:0.1.0")
+          //  implementation("ru.sulgik.mapkit:yandex-mapkit-kmp-moko-compose:0.1.0")
+            implementation(libs.yandex.maps)
        //             implementation("com.yandex.android:mapkit-search:4.4.0-lite")
             
 
